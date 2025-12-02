@@ -11,10 +11,14 @@ import (
 
 	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
 	corev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
+	resourcesv1alpha1 "github.com/gardener/gardener/pkg/apis/resources/v1alpha1"
+	"github.com/gardener/gardener/pkg/client/kubernetes"
 	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"k8s.io/client-go/kubernetes/scheme"
+	acidv1 "github.com/zalando/postgres-operator/pkg/apis/acid.zalan.do/v1"
+	zalandov1 "github.com/zalando/postgres-operator/pkg/apis/zalando.org/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
@@ -31,6 +35,7 @@ var (
 	cfg       *rest.Config
 	k8sClient client.Client
 	logger    logr.Logger
+	k8sScheme = runtime.NewScheme()
 )
 
 func TestActuators(t *testing.T) {
@@ -44,15 +49,21 @@ var _ = BeforeSuite(func() {
 
 	ctx, cancel = context.WithCancel(context.TODO())
 
-	Expect(corev1beta1.AddToScheme(scheme.Scheme)).To(Succeed())
-	Expect(extensionscontroller.AddToScheme(scheme.Scheme)).To(Succeed())
-	configinstall.Install(scheme.Scheme)
+	Expect(corev1beta1.AddToScheme(k8sScheme)).To(Succeed())
+	Expect(extensionscontroller.AddToScheme(k8sScheme)).To(Succeed())
+	Expect(resourcesv1alpha1.AddToScheme(k8sScheme)).To(Succeed())
+	Expect(kubernetes.AddShootSchemeToScheme(k8sScheme)).To(Succeed())
+	Expect(acidv1.AddToScheme(k8sScheme)).To(Succeed())
+	Expect(zalandov1.AddToScheme(k8sScheme)).To(Succeed())
+	configinstall.Install(k8sScheme)
 
 	By("bootstrapping test environment")
 	testEnv = &envtest.Environment{
-		Scheme: scheme.Scheme,
+		Scheme: k8sScheme,
 		CRDDirectoryPaths: []string{
 			filepath.Join("..", "..", "test", "manifests", "crd", "extensions.gardener.cloud", "v1alpha1"),
+			filepath.Join("..", "..", "test", "manifests", "crd", "resources.gardener.cloud", "v1alpha1"),
+			filepath.Join("..", "..", "test", "manifests", "crd", "acid.zalan.do", "v1"),
 		},
 		ErrorIfCRDPathMissing: true,
 	}
@@ -62,7 +73,7 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	Expect(cfg).NotTo(BeNil())
 
-	k8sClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
+	k8sClient, err = client.New(cfg, client.Options{Scheme: k8sScheme})
 	Expect(err).NotTo(HaveOccurred())
 	Expect(k8sClient).NotTo(BeNil())
 })
