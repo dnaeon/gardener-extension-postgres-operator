@@ -13,10 +13,10 @@ import (
 type PostgresConfigSpec struct {
 	// VolumeSize specifies the size of the persistent volume for the
 	// cluster nodes.
-	VolumeSize resource.Quantity `json:"volumeSize,omitZero"`
+	VolumeSize resource.Quantity `json:"volumeSize,omitzero"`
 
 	// Replicas specifies the number of cluster instances.
-	Replicas int `json:"replicas,omitzero"`
+	Replicas int32 `json:"replicas,omitzero"`
 
 	// Users specifies the database users and their roles.
 	Users map[string][]string `json:"users,omitzero"`

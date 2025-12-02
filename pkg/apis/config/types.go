@@ -16,7 +16,7 @@ type PostgresConfigSpec struct {
 	VolumeSize resource.Quantity
 
 	// Replicas specifies the number of cluster instances.
-	Replicas int
+	Replicas int32
 
 	// Users specifies the database users and their roles.
 	Users map[string][]string
