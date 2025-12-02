@@ -15,20 +15,19 @@ import (
 	"github.com/gardener/gardener/extensions/pkg/controller/extension"
 	v1beta1helper "github.com/gardener/gardener/pkg/apis/core/v1beta1/helper"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
-	"github.com/gardener/gardener/pkg/utils/managedresources"
 	"github.com/go-logr/logr"
 	acidv1 "github.com/zalando/postgres-operator/pkg/apis/acid.zalan.do/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/serializer/json"
 	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/util/retry"
 	"k8s.io/component-base/featuregate"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/gardener/gardener-extension-postgres-operator/pkg/apis/config"
 	"github.com/gardener/gardener-extension-postgres-operator/pkg/apis/config/validation"
 	"github.com/gardener/gardener-extension-postgres-operator/pkg/metrics"
-	"k8s.io/apimachinery/pkg/runtime/serializer"
 )
 
 const (
@@ -43,10 +42,6 @@ const (
 	// postgresClusterName is the name of the Postgres cluster created by
 	// the extension.
 	postgresClusterName = "postgres-cluster"
-
-	// managedResourceName is the name of the managed resource created by
-	// the extension.
-	managedResourceName = "postgres-cluster"
 )
 
 // Actuator is an implementation of [extension.Actuator].
@@ -242,22 +237,17 @@ func (a *Actuator) Reconcile(ctx context.Context, logger logr.Logger, ex *extens
 		},
 	}
 
-	scheme := a.client.Scheme()
-	ser := json.NewSerializerWithOptions(
-		json.DefaultMetaFactory,
-		scheme,
-		scheme,
-		json.SerializerOptions{Yaml: true, Pretty: false, Strict: false},
-	)
-	codec := serializer.NewCodecFactory(scheme)
-	registry := managedresources.NewRegistry(scheme, codec, ser)
-	data, err := registry.AddAllAndSerialize(postgres)
-	if err != nil {
-		return fmt.Errorf("cannot serialize managed resources: %w", err)
+	// Create the Postgres cluster, unless it exists already.
+	pc := acidv1.Postgresql{}
+	if err := a.client.Get(ctx, client.ObjectKeyFromObject(postgres), &pc); apierrors.IsNotFound(err) {
+		logger.Info("creating postgres cluster resource")
+		return a.client.Create(ctx, postgres)
 	}
 
-	origin := fmt.Sprintf("extension-%s", Name)
-	return managedresources.CreateForShoot(ctx, a.client, ex.Namespace, managedResourceName, origin, false, data)
+	// Update the Postgres cluster spec
+	return retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		return a.client.Update(ctx, postgres)
+	})
 }
 
 // Delete deletes any resources managed by the [Actuator]. This method
@@ -268,9 +258,16 @@ func (a *Actuator) Delete(ctx context.Context, logger logr.Logger, ex *extension
 		metrics.ActuatorOperationTotal.WithLabelValues(ex.Namespace, "delete").Inc()
 	}()
 
-	logger.Info("deleting resources managed by extension")
+	logger.Info("deleting postgres cluster resource")
 
-	return managedresources.DeleteForShoot(ctx, a.client, ex.Namespace, managedResourceName)
+	postgres := &acidv1.Postgresql{
+		ObjectMeta: v1.ObjectMeta{
+			Namespace: ex.Namespace,
+			Name:      postgresClusterName,
+		},
+	}
+
+	return client.IgnoreNotFound(a.client.Delete(ctx, postgres))
 }
 
 // ForceDelete signals the [Actuator] to delete any resources managed by it,
