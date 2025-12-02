@@ -21,3 +21,7 @@ resources:
 - extensions.gardener.cloud/v1alpha1/extensions.gardener.cloud_networks.yaml
 - extensions.gardener.cloud/v1alpha1/extensions.gardener.cloud_operatingsystemconfigs.yaml
 - extensions.gardener.cloud/v1alpha1/extensions.gardener.cloud_workers.yaml
+- resources.gardener.cloud/v1alpha1/resources.gardener.cloud_managedresources.yaml
+- acid.zalan.do/v1/acid.zalan.do_postgresteams.yaml
+- acid.zalan.do/v1/acid.zalan.do_postgresqls.yaml
+- acid.zalan.do/v1/acid.zalan.do_operatorconfigurations.yaml
