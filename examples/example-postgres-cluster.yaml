@@ -1,0 +1,21 @@
+---
+apiVersion: acid.zalan.do/v1
+kind: postgresql
+metadata:
+  name: example-cluster
+spec:
+  teamId: gardener
+  volume:
+    size: 1Gi
+  numberOfInstances: 1
+  users:
+    gardener:  # database owner
+    - superuser
+    - createdb
+    foo_user: []  # role for application foo
+  databases:
+    gardener: gardener  # dbname: owner
+  preparedDatabases:
+    bar: {}
+  postgresql:
+    version: "17"
