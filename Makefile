@@ -219,6 +219,7 @@ kind-load-image:
 
 .PHONY: helm-load-chart
 helm-load-chart:
+	@$(GO_TOOL) helm dependency build $(SRC_ROOT)/charts
 	@$(GO_TOOL) helm package $(SRC_ROOT)/charts --version $(VERSION)
 	@$(GO_TOOL) helm push --plain-http $(EXTENSION_NAME)-$(VERSION).tgz oci://$(LOCAL_REGISTRY)/helm-charts
 	@rm -f $(EXTENSION_NAME)-$(VERSION).tgz
