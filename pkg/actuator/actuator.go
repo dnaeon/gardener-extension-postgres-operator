@@ -21,6 +21,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/gardener/gardener-extension-postgres-operator/pkg/apis/config"
+	"github.com/gardener/gardener-extension-postgres-operator/pkg/apis/config/validation"
 	"github.com/gardener/gardener-extension-postgres-operator/pkg/metrics"
 )
 
@@ -187,21 +188,19 @@ func (a *Actuator) Reconcile(ctx context.Context, logger logr.Logger, ex *extens
 		return nil
 	}
 
-	// TODO(user): Remove the following check, if your extension does not
-	// require any configuration.
+	// Validate the extension configuration
 	if ex.Spec.ProviderConfig == nil {
 		return errors.New("no provider config specified")
 	}
 
 	// Decode provider spec configuration into our known config type.
-	var cfg config.ExampleConfig
+	var cfg config.PostgresConfig
 	if err := runtime.DecodeInto(a.decoder, ex.Spec.ProviderConfig.Raw, &cfg); err != nil {
 		return errors.New("invalid provider spec configuration")
 	}
 
-	// TODO(user): validate any other config settings for your extension.
-	if cfg.Spec.Foo == "" {
-		return errors.New("foo must not be empty")
+	if err := validation.Validate(cfg); err != nil {
+		return err
 	}
 
 	return nil
