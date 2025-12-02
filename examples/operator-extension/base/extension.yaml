@@ -1,0 +1,13 @@
+apiVersion: operator.gardener.cloud/v1alpha1
+kind: Extension
+metadata:
+  name: gardener-extension-postgres-operator
+spec:
+  deployment:
+    extension:
+      helm:
+        ociRepository:
+          ref: garden.local.gardener.cloud:5001/helm-charts/gardener-extension-postgres-operator:v0.1.0-dev
+  resources:
+    - kind: Extension
+      type: postgres
