@@ -15,14 +15,20 @@ import (
 	"github.com/gardener/gardener/extensions/pkg/controller/extension"
 	v1beta1helper "github.com/gardener/gardener/pkg/apis/core/v1beta1/helper"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
+	"github.com/gardener/gardener/pkg/utils/managedresources"
 	"github.com/go-logr/logr"
+	acidv1 "github.com/zalando/postgres-operator/pkg/apis/acid.zalan.do/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/serializer/json"
+	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/component-base/featuregate"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/gardener/gardener-extension-postgres-operator/pkg/apis/config"
 	"github.com/gardener/gardener-extension-postgres-operator/pkg/apis/config/validation"
 	"github.com/gardener/gardener-extension-postgres-operator/pkg/metrics"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
 )
 
 const (
@@ -33,6 +39,14 @@ const (
 	ExtensionType = "postgres"
 	// FinalizerSuffix is the finalizer suffix used by the actuator
 	FinalizerSuffix = "gardener-extension-postgres-operator"
+
+	// postgresClusterName is the name of the Postgres cluster created by
+	// the extension.
+	postgresClusterName = "postgres-cluster"
+
+	// managedResourceName is the name of the managed resource created by
+	// the extension.
+	managedResourceName = "postgres-cluster"
 )
 
 // Actuator is an implementation of [extension.Actuator].
@@ -40,6 +54,7 @@ type Actuator struct {
 	reader  client.Reader
 	client  client.Client
 	decoder runtime.Decoder
+	scheme  *runtime.Scheme
 
 	// The following fields are usually derived from the list of extra Helm
 	// values provided by gardenlet during the deployment of the extension.
@@ -61,6 +76,7 @@ type Option func(a *Actuator) error
 func New(opts ...Option) (*Actuator, error) {
 	act := &Actuator{
 		gardenletFeatureGates: make(map[featuregate.Feature]bool),
+		scheme:                scheme.Scheme,
 	}
 
 	for _, opt := range opts {
@@ -203,7 +219,45 @@ func (a *Actuator) Reconcile(ctx context.Context, logger logr.Logger, ex *extens
 		return err
 	}
 
-	return nil
+	users := make(map[string]acidv1.UserFlags)
+	for user, roles := range cfg.Spec.Users {
+		users[user] = acidv1.UserFlags(roles)
+	}
+
+	postgres := &acidv1.Postgresql{
+		ObjectMeta: v1.ObjectMeta{
+			Namespace: ex.Namespace,
+			Name:      postgresClusterName,
+		},
+		Spec: acidv1.PostgresSpec{
+			Volume: acidv1.Volume{
+				Size: cfg.Spec.VolumeSize.String(),
+			},
+			NumberOfInstances: cfg.Spec.Replicas,
+			Users:             users,
+			Databases:         cfg.Spec.Databases,
+			PostgresqlParam: acidv1.PostgresqlParam{
+				PgVersion: cfg.Spec.PostgresVersion,
+			},
+		},
+	}
+
+	scheme := a.client.Scheme()
+	ser := json.NewSerializerWithOptions(
+		json.DefaultMetaFactory,
+		scheme,
+		scheme,
+		json.SerializerOptions{Yaml: true, Pretty: false, Strict: false},
+	)
+	codec := serializer.NewCodecFactory(scheme)
+	registry := managedresources.NewRegistry(scheme, codec, ser)
+	data, err := registry.AddAllAndSerialize(postgres)
+	if err != nil {
+		return fmt.Errorf("cannot serialize managed resources: %w", err)
+	}
+
+	origin := fmt.Sprintf("extension-%s", Name)
+	return managedresources.CreateForShoot(ctx, a.client, ex.Namespace, managedResourceName, origin, false, data)
 }
 
 // Delete deletes any resources managed by the [Actuator]. This method
@@ -216,9 +270,7 @@ func (a *Actuator) Delete(ctx context.Context, logger logr.Logger, ex *extension
 
 	logger.Info("deleting resources managed by extension")
 
-	// TODO(user): implement logic for deleting anything managed by the extension
-
-	return nil
+	return managedresources.DeleteForShoot(ctx, a.client, ex.Namespace, managedResourceName)
 }
 
 // ForceDelete signals the [Actuator] to delete any resources managed by it,
@@ -232,9 +284,7 @@ func (a *Actuator) ForceDelete(ctx context.Context, logger logr.Logger, ex *exte
 
 	logger.Info("shoot has been force-deleted, deleting resources managed by extension")
 
-	// TODO(user): implement logic for deleting anything managed by the extension
-
-	return nil
+	return a.Delete(ctx, logger, ex)
 }
 
 // Restore restores the resources managed by the extension [Actuator]. This

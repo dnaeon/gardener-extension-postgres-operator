@@ -12,10 +12,10 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
-	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/component-base/featuregate"
 	"k8s.io/utils/ptr"
 
@@ -30,13 +30,21 @@ var _ = Describe("Actuator", Ordered, func() {
 
 		extResource *extensionsv1alpha1.Extension
 		cluster     *extensionsv1alpha1.Cluster
-		decoder     = serializer.NewCodecFactory(scheme.Scheme, serializer.EnableStrict).UniversalDecoder()
+		decoder     = serializer.NewCodecFactory(k8sScheme, serializer.EnableStrict).UniversalDecoder()
 
 		featureGates   = make(map[featuregate.Feature]bool)
 		actuatorOpts   []actuator.Option
-		providerConfig = config.ExampleConfig{
-			Spec: config.ExampleConfigSpec{
-				Foo: "bar",
+		providerConfig = config.PostgresConfig{
+			Spec: config.PostgresConfigSpec{
+				VolumeSize: resource.MustParse("1Gi"),
+				Replicas:   1,
+				Users: map[string][]string{
+					"foo_user": {"superuser", "createdb"},
+				},
+				Databases: map[string]string{
+					"foo_db": "foo_user",
+				},
+				PostgresVersion: "18",
 			},
 		}
 
@@ -92,8 +100,8 @@ var _ = Describe("Actuator", Ordered, func() {
 		actuatorOpts = []actuator.Option{
 			actuator.WithClient(k8sClient),
 			actuator.WithReader(k8sClient),
-			actuator.WithGardenerVersion("1.0.0"),
 			actuator.WithDecoder(decoder),
+			actuator.WithGardenerVersion("1.0.0"),
 			actuator.WithGardenletFeatures(featureGates),
 		}
 
