@@ -11,9 +11,17 @@ spec:
     - type: postgres
       providerConfig:
         apiVersion: postgres.extensions.gardener.cloud/v1alpha1
-        kind: ExampleConfig
+        kind: PostgresConfig
         spec:
-          foo: bar
+          volumeSize: 1Gi
+          replicas: 2
+          users:
+            gardener:
+              - superuser
+              - createdb
+          databases:
+            gardener: gardener # dbname: owner
+          postgresVersion: "17"
   cloudProfile:
     name: local
     kind: CloudProfile
