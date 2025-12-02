@@ -42,21 +42,9 @@ rules:
   - list
   - watch
 - apiGroups:
-  - resources.gardener.cloud
+  - acid.zalan.do
   resources:
-  - managedresources
-  verbs:
-  - get
-  - list
-  - watch
-  - create
-  - update
-  - patch
-  - delete
-- apiGroups:
-  - ""
-  resources:
-  - secrets
+  - postgresqls
   verbs:
   - get
   - list
