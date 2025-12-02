@@ -10,7 +10,7 @@ extension:
   #
   # Also, it will be used as the name for the Deployment, Service and
   # ServiceAccount resources.
-  name: gardener-extension-postgres-operator
+  name: gardener-extension-postgres-operator-controller
   # Logging settings.
   logging:
     # Logging level. Valid values are `info', `debug' and `error'.
@@ -48,7 +48,7 @@ extension:
   # Leader election settings
   leader_election:
     enabled: true
-    election_id: gardener-extension-postgres-operator-leader-election
+    election_id: gardener-extension-postgres-operator-controller-leader-election
 # Extra values provided by gardenlet during extension deployment.
 #
 # See the links below for more details.
@@ -183,3 +183,8 @@ volumeMounts: []
 nodeSelector: {}
 tolerations: []
 affinity: {}
+# PostgreSQL Operator values
+postgres-operator:
+  podLabels:
+    networking.gardener.cloud/to-runtime-apiserver: allowed
+    networking.gardener.cloud/to-dns: allowed
