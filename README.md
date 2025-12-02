@@ -1,6 +1,11 @@
 # gardener-extension-postgres-operator
 
-The `gardener-extension-postgres-operator` repo provides Gardener Extension for PostgreSQL.
+The `gardener-extension-postgres-operator` repo provides PostgreSQL Operator as
+a Gardener Extension.
+
+> [!WARNING]
+> This repo is meant to serve for example purposes only. Do not use it in a
+> production environment.
 
 # Requirements
 
@@ -42,9 +47,18 @@ spec:
     - type: postgres
       providerConfig:
         apiVersion: postgres.extensions.gardener.cloud/v1alpha1
-        kind: ExampleConfig
+        kind: PostgresConfig
         spec:
-          foo: bar
+          volumeSize: 1Gi
+          replicas: 2
+          users:
+            gardener:
+              - superuser
+              - createdb
+          databases:
+            gardener: gardener # dbname: owner
+          postgresVersion: "17"
+
 ```
 
 # Development
