@@ -1,6 +1,6 @@
 module github.com/gardener/gardener-extension-postgres-operator
 
-go 1.25.0
+go 1.25.3
 
 require (
 	github.com/gardener/gardener v1.132.2
@@ -9,6 +9,7 @@ require (
 	github.com/onsi/gomega v1.38.2
 	github.com/prometheus/client_golang v1.23.2
 	github.com/urfave/cli/v3 v3.6.1
+	github.com/zalando/postgres-operator v1.15.0
 	k8s.io/api v0.34.2
 	k8s.io/apiextensions-apiserver v0.34.2
 	k8s.io/apimachinery v0.34.2
@@ -74,6 +75,7 @@ require (
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/jpillora/backoff v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.13-0.20220915233716-71ac16282d12 // indirect
+	github.com/kr/text v0.2.0 // indirect
 	github.com/kubernetes-csi/external-snapshotter/client/v4 v4.2.0 // indirect
 	github.com/labstack/echo/v4 v4.13.4 // indirect
 	github.com/labstack/gommon v0.4.2 // indirect
@@ -86,6 +88,7 @@ require (
 	github.com/moby/spdystream v0.5.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
+	github.com/motomux/pretty v0.0.0-20161209205251-b2aad2c9a95d // indirect
 	github.com/muhlemmer/gu v0.3.1 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f // indirect
