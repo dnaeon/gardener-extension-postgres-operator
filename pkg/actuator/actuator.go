@@ -18,7 +18,7 @@ import (
 	"github.com/go-logr/logr"
 	acidv1 "github.com/zalando/postgres-operator/pkg/apis/acid.zalan.do/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -235,7 +235,7 @@ func (a *Actuator) Reconcile(ctx context.Context, logger logr.Logger, ex *extens
 		// Postgres cluster does not exist, create it.
 		logger.Info("creating postgres cluster resource")
 		postgresClusterObj = &acidv1.Postgresql{
-			ObjectMeta: v1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Namespace: ex.Namespace,
 				Name:      postgresClusterName,
 			},
@@ -256,11 +256,11 @@ func (a *Actuator) Reconcile(ctx context.Context, logger logr.Logger, ex *extens
 	case err == nil:
 		// Postgres cluster exists, update it
 		postgresClusterObjPatch := client.MergeFrom(postgresClusterObj.DeepCopy())
-		postgresClusterObj.Spec.Volume.Size = cfg.Spec.VolumeSize.String()
+		postgresClusterObj.Spec.Size = cfg.Spec.VolumeSize.String()
 		postgresClusterObj.Spec.NumberOfInstances = cfg.Spec.Replicas
 		postgresClusterObj.Spec.Users = users
 		postgresClusterObj.Spec.Databases = cfg.Spec.Databases
-		postgresClusterObj.Spec.PostgresqlParam.PgVersion = cfg.Spec.PostgresVersion
+		postgresClusterObj.Spec.PgVersion = cfg.Spec.PostgresVersion
 
 		return retry.RetryOnConflict(retry.DefaultRetry, func() error {
 			return a.client.Patch(ctx, postgresClusterObj, postgresClusterObjPatch)
@@ -281,14 +281,14 @@ func (a *Actuator) Delete(ctx context.Context, logger logr.Logger, ex *extension
 
 	logger.Info("deleting postgres cluster resource")
 
-	postgres := &acidv1.Postgresql{
-		ObjectMeta: v1.ObjectMeta{
+	postgresClusterObj := &acidv1.Postgresql{
+		ObjectMeta: metav1.ObjectMeta{
 			Namespace: ex.Namespace,
 			Name:      postgresClusterName,
 		},
 	}
 
-	return client.IgnoreNotFound(a.client.Delete(ctx, postgres))
+	return client.IgnoreNotFound(a.client.Delete(ctx, postgresClusterObj))
 }
 
 // ForceDelete signals the [Actuator] to delete any resources managed by it,

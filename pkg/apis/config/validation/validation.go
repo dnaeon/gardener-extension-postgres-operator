@@ -1,8 +1,9 @@
 package validation
 
 import (
-	"github.com/gardener/gardener-extension-postgres-operator/pkg/apis/config"
 	"k8s.io/apimachinery/pkg/util/validation/field"
+
+	"github.com/gardener/gardener-extension-postgres-operator/pkg/apis/config"
 )
 
 // Validate validates the given [config.PostgresConfig]
