@@ -1,6 +1,6 @@
 module github.com/gardener/gardener-extension-postgres-operator
 
-go 1.25.3
+go 1.25.5
 
 require (
 	github.com/gardener/gardener v1.132.2
