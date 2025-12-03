@@ -44,7 +44,7 @@ var _ = Describe("Actuator", Ordered, func() {
 				Databases: map[string]string{
 					"foo_db": "foo_user",
 				},
-				PostgresVersion: "18",
+				PostgresVersion: "17",
 			},
 		}
 
