@@ -185,6 +185,14 @@ tolerations: []
 affinity: {}
 # PostgreSQL Operator values
 postgres-operator:
+  # Labels for the postgres-operator
   podLabels:
     networking.gardener.cloud/to-runtime-apiserver: allowed
     networking.gardener.cloud/to-dns: allowed
+    networking.resources.gardener.cloud/to-postgres-cluster-repl-tcp-5432: allowed
+    networking.resources.gardener.cloud/to-postgres-cluster-tcp-5432: allowed
+  configKubernetes:
+    # Additional labels for the cluster pods
+    cluster_labels:
+      networking.gardener.cloud/to-runtime-apiserver: allowed
+      networking.gardener.cloud/to-dns: allowed
