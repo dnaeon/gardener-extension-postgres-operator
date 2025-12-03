@@ -225,6 +225,8 @@ func (a *Actuator) Reconcile(ctx context.Context, logger logr.Logger, ex *extens
 		Namespace: ex.Namespace,
 	}
 
+	// TODO: healthcheck controller for the postgres cluster
+
 	// Create the Postgres cluster, unless it exists already.
 	postgresClusterObj := &acidv1.Postgresql{}
 	err = a.client.Get(ctx, namespacedName, postgresClusterObj)
