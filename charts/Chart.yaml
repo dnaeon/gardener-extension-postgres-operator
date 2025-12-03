@@ -19,7 +19,6 @@ version: v0.1.0-dev
 # follow Semantic Versioning. They should reflect the version the application is using.
 # It is recommended to use it with quotes.
 appVersion: "1.16.0"
-
 dependencies:
   - name: postgres-operator
     repository: https://opensource.zalando.com/postgres-operator/charts/postgres-operator
