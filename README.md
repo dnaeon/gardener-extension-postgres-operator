@@ -81,7 +81,7 @@ postgres-cluster          17        2      1Gi                                  
 Verify that the Postgres pods are running as well.
 
 ``` shell
-> kubectl --namespace shoot--local--local get pods -l cluster-name=postgres-cluster
+$ kubectl --namespace shoot--local--local get pods -l cluster-name=postgres-cluster
 NAME                 READY   STATUS    RESTARTS   AGE
 postgres-cluster-0   1/1     Running   0          51m
 postgres-cluster-1   1/1     Running   0          50m
@@ -298,7 +298,7 @@ resources have been created by the `gardener-operator` in the _virtual_ garden
 cluster.
 
 ``` shell
-> kubectl --kubeconfig $KUBECONFIG_VIRTUAL get controllerregistrations,controllerdeployments gardener-extension-postgres-operator
+$ kubectl --kubeconfig $KUBECONFIG_VIRTUAL get controllerregistrations,controllerdeployments gardener-extension-postgres-operator
 NAME                                                                    RESOURCES           AGE
 controllerregistration.core.gardener.cloud/gardener-extension-postgres-operator   Extension/postgres  3m50s
 
