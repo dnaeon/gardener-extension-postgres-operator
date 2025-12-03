@@ -20,6 +20,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/util/retry"
 	"k8s.io/component-base/featuregate"
@@ -219,35 +220,53 @@ func (a *Actuator) Reconcile(ctx context.Context, logger logr.Logger, ex *extens
 		users[user] = acidv1.UserFlags(roles)
 	}
 
-	postgres := &acidv1.Postgresql{
-		ObjectMeta: v1.ObjectMeta{
-			Namespace: ex.Namespace,
-			Name:      postgresClusterName,
-		},
-		Spec: acidv1.PostgresSpec{
-			Volume: acidv1.Volume{
-				Size: cfg.Spec.VolumeSize.String(),
-			},
-			NumberOfInstances: cfg.Spec.Replicas,
-			Users:             users,
-			Databases:         cfg.Spec.Databases,
-			PostgresqlParam: acidv1.PostgresqlParam{
-				PgVersion: cfg.Spec.PostgresVersion,
-			},
-		},
+	namespacedName := types.NamespacedName{
+		Name:      postgresClusterName,
+		Namespace: ex.Namespace,
 	}
 
 	// Create the Postgres cluster, unless it exists already.
-	pc := acidv1.Postgresql{}
-	if err := a.client.Get(ctx, client.ObjectKeyFromObject(postgres), &pc); apierrors.IsNotFound(err) {
+	postgresClusterObj := &acidv1.Postgresql{}
+	err = a.client.Get(ctx, namespacedName, postgresClusterObj)
+	switch {
+	case apierrors.IsNotFound(err):
+		// Postgres cluster does not exist, create it.
 		logger.Info("creating postgres cluster resource")
-		return a.client.Create(ctx, postgres)
-	}
+		postgresClusterObj = &acidv1.Postgresql{
+			ObjectMeta: v1.ObjectMeta{
+				Namespace: ex.Namespace,
+				Name:      postgresClusterName,
+			},
+			Spec: acidv1.PostgresSpec{
+				Volume: acidv1.Volume{
+					Size: cfg.Spec.VolumeSize.String(),
+				},
+				NumberOfInstances: cfg.Spec.Replicas,
+				Users:             users,
+				Databases:         cfg.Spec.Databases,
+				PostgresqlParam: acidv1.PostgresqlParam{
+					PgVersion: cfg.Spec.PostgresVersion,
+				},
+			},
+		}
 
-	// Update the Postgres cluster spec
-	return retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		return a.client.Update(ctx, postgres)
-	})
+		return a.client.Create(ctx, postgresClusterObj)
+	case err == nil:
+		// Postgres cluster exists, update it
+		postgresClusterObjPatch := client.MergeFrom(postgresClusterObj.DeepCopy())
+		postgresClusterObj.Spec.Volume.Size = cfg.Spec.VolumeSize.String()
+		postgresClusterObj.Spec.NumberOfInstances = cfg.Spec.Replicas
+		postgresClusterObj.Spec.Users = users
+		postgresClusterObj.Spec.Databases = cfg.Spec.Databases
+		postgresClusterObj.Spec.PostgresqlParam.PgVersion = cfg.Spec.PostgresVersion
+
+		return retry.RetryOnConflict(retry.DefaultRetry, func() error {
+			return a.client.Patch(ctx, postgresClusterObj, postgresClusterObjPatch)
+		})
+	default:
+		// Something else happeneded
+		return err
+	}
 }
 
 // Delete deletes any resources managed by the [Actuator]. This method
