@@ -61,6 +61,32 @@ spec:
 
 ```
 
+Wait for the shoot to be reconciled and then confirm that the PostgreSQL
+database is up and running in the shoot control-plane namespace.
+
+``` shell
+$ kubectl --namespace shoot--local--local get extensions
+NAME       TYPE       STATUS      AGE
+postgres   postgres   Succeeded   50m
+```
+
+Verify that the Postgres cluster has been created.
+
+``` shell
+$ kubectl --namespace shoot--local--local get postgresqls
+NAME               TEAM   VERSION   PODS   VOLUME   CPU-REQUEST   MEMORY-REQUEST   AGE   STATUS
+postgres-cluster          17        2      1Gi                                     50m   Running
+```
+
+Verify that the Postgres pods are running as well.
+
+``` shell
+> kubectl --namespace shoot--local--local get pods -l cluster-name=postgres-cluster
+NAME                 READY   STATUS    RESTARTS   AGE
+postgres-cluster-0   1/1     Running   0          51m
+postgres-cluster-1   1/1     Running   0          50m
+```
+
 # Development
 
 In order to build a binary of the extension, you can use the following command.
